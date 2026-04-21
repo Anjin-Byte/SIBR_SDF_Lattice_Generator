@@ -3,17 +3,17 @@
 //! # Current scope (incrementally being ported)
 //!
 //! - **Case 3** (face-ambiguous, 2 diag corners on a face): **fully
-//!   disambiguated** via [`decider::face_decider`] and
-//!   [`case3`]'s alternative triangulation tables.
+//!   disambiguated** via the private `decider::face_decider` helper and
+//!   `case3`'s alternative triangulation tables.
 //! - **Case 4** (body-ambiguous, 2 diag corners on a body diagonal):
-//!   **fully disambiguated** via [`decider::interior_decider`] and
-//!   [`case4`]'s alternative triangulation tables.
+//!   **fully disambiguated** via `decider::interior_decider` and
+//!   `case4`'s alternative triangulation tables.
 //! - **Unambiguous cases (2, 3, 6, 9, 10, 12, 15 in Lewiner's
-//!   numbering)**: handled by [`unambiguous`]'s face-consistent
-//!   Lewiner tables. Replaces classic MC's 1987 triangulations, which
-//!   are self-manifold per voxel but not consistent across shared faces.
-//!   This is what eliminates the ~2–3% non-manifold edge rate on typical
-//!   SDF workloads.
+//!   numbering)**: handled by the `unambiguous` submodule's
+//!   face-consistent Lewiner tables. Replaces classic MC's 1987
+//!   triangulations, which are self-manifold per voxel but not
+//!   consistent across shared faces. This is what eliminates the ~2–3%
+//!   non-manifold edge rate on typical SDF workloads.
 //! - **Empty case (Lewiner 1)**: no geometry, early-return.
 //! - **Cases 7, 8, 11, 13, 14 (Chernyaev 6/7/10/12/13)**: still ambiguous
 //!   and still fall back to classic MC's triangulation with a single

@@ -10,7 +10,14 @@
 //!   smaller on disk.
 
 #![forbid(unsafe_code)]
-#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+#![allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    // User-facing percent display; usize triangle counts never approach the
+    // f64 mantissa limit.
+    clippy::cast_precision_loss,
+)]
 
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
@@ -76,17 +83,11 @@ fn main() -> Result<()> {
 /// Reads `input` as binary STL, feeds it through `meshopt::simplify` with
 /// topology-preservation guards (`SimplifyOptions::empty()`, which enables
 /// the safe mode), writes the result as binary STL to `output`.
-fn remesh(
-    input: &PathBuf,
-    output: &PathBuf,
-    target_error: f32,
-    target_tris: usize,
-) -> Result<()> {
+fn remesh(input: &PathBuf, output: &PathBuf, target_error: f32, target_tris: usize) -> Result<()> {
     // ---- load input ----------------------------------------------------
     let t_read = Instant::now();
-    let mut in_file = BufReader::new(
-        File::open(input).with_context(|| format!("opening {}", input.display()))?,
-    );
+    let mut in_file =
+        BufReader::new(File::open(input).with_context(|| format!("opening {}", input.display()))?);
     let stl = stl_io::read_stl(&mut in_file).context("parsing STL")?;
     let in_tris_raw = stl.faces.len();
     let in_verts_raw = stl.vertices.len();
@@ -99,11 +100,7 @@ fn remesh(
 
     // ---- convert to meshopt inputs ------------------------------------
     // `stl_io` already welds vertices and returns an indexed mesh.
-    let vertices: Vec<[f32; 3]> = stl
-        .vertices
-        .iter()
-        .map(|v| [v[0], v[1], v[2]])
-        .collect();
+    let vertices: Vec<[f32; 3]> = stl.vertices.iter().map(|v| [v[0], v[1], v[2]]).collect();
     let indices: Vec<u32> = stl
         .faces
         .iter()

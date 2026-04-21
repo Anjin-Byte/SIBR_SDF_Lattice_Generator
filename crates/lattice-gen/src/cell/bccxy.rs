@@ -50,13 +50,7 @@ pub(crate) type BccXyCellBody = Union<
                         Capsule,
                         Union<
                             Capsule,
-                            Union<
-                                Capsule,
-                                Union<
-                                    Capsule,
-                                    Union<Capsule, Union<Capsule, Capsule>>,
-                                >,
-                            >,
+                            Union<Capsule, Union<Capsule, Union<Capsule, Union<Capsule, Capsule>>>>,
                         >,
                     >,
                 >,
@@ -76,10 +70,7 @@ pub(crate) type BccXyCellBody = Union<
 /// practice, with `length > 0` and `radius > 0` validated upstream, the
 /// only way this fails is a bypass of [`crate::LatticeJob::new`]'s
 /// invariants — defensive path.
-pub(crate) fn bccxy_cell_body(
-    length: f32,
-    radius: f32,
-) -> Result<BccXyCellBody, LatticeError> {
+pub(crate) fn bccxy_cell_body(length: f32, radius: f32) -> Result<BccXyCellBody, LatticeError> {
     let h = length * 0.5;
 
     // Body diagonals (8): cube center ↔ each of 8 corners. The order is
@@ -319,7 +310,10 @@ mod tests {
         // Distance from (0, h, -h)=(0,2,-2) to (-1.33, 1.33, -1.33):
         // ≈ √(1.33² + 0.67² + 0.67²) ≈ 1.63. Minus r = 0.1 gives ~1.53.
         let d = body.eval(vec3(0.0, 2.0, -2.0));
-        assert!(d > 0.5, "expected well positive at bottom-face midpoint, got {d}");
+        assert!(
+            d > 0.5,
+            "expected well positive at bottom-face midpoint, got {d}"
+        );
     }
 
     /// Regression: "Type-level `ExactSdf` dropped in the nested Union."

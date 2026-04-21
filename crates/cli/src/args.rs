@@ -154,7 +154,7 @@ pub enum OutputFormat {
 /// Which isosurface extraction method to use.
 ///
 /// Deliberately a CLI-side enum separate from
-/// [`lattice_gen::ExtractionMethod`]: clap's `ValueEnum` derive needs a
+/// [`lattice_gen::mesh::ExtractionMethod`]: clap's `ValueEnum` derive needs a
 /// local type, and keeping them distinct lets us rename CLI spellings
 /// without touching the library API.
 #[derive(Debug, Clone, Copy, ValueEnum)]

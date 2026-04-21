@@ -1,11 +1,11 @@
 //! Classic Marching Cubes (Lorensen & Cline, 1987) per-voxel processing.
 //!
 //! The 15 unique cases (256 after sign/rotation) are encoded in the
-//! [`tables::classic`] tables. Known limitation: at the ~14 ambiguous
-//! configurations, this implementation picks the Lorensen-default
-//! triangulation, which can produce holes and non-manifold edges at ~5%
-//! of edges on smooth SDFs. See [`super::mc33`] for the topologically
-//! correct alternative.
+//! private `tables::classic` module. Known limitation: at the ~14
+//! ambiguous configurations, this implementation picks the
+//! Lorensen-default triangulation, which can produce holes and
+//! non-manifold edges at ~5% of edges on smooth SDFs. See
+//! [`super::mc33`] for the topologically correct alternative.
 
 use glam::Vec3;
 

@@ -638,11 +638,7 @@ mod tests {
         // Unique-enough per process; parallel tests in the same crate
         // would collide without a nonce, so include the tag.
         let mut p = std::env::temp_dir();
-        p.push(format!(
-            "sibr-cli-smoke-{}-{}.stl",
-            tag,
-            std::process::id()
-        ));
+        p.push(format!("sibr-cli-smoke-{}-{}.stl", tag, std::process::id()));
         p
     }
 

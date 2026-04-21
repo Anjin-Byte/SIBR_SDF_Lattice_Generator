@@ -1,9 +1,10 @@
 //! Primitive shapes — the outer boundary that trims the tiled lattice body.
 //!
-//! Phase 1a supports two primitive shapes: [`PrimitiveShape::Cube`] and
-//! [`PrimitiveShape::Cylinder`]. Internally, each variant materializes as a
-//! corresponding [`sdf`] primitive stored in a [`BoundaryShape`] enum that
-//! itself implements the SDF trait hierarchy.
+//! Phase 1a supports two primitive shapes, constructed via
+//! [`PrimitiveShape::cube`] and [`PrimitiveShape::cylinder`]. Internally,
+//! each materializes as a corresponding [`sdf`] primitive stored in a
+//! private `BoundaryShape` enum that itself implements the SDF trait
+//! hierarchy.
 //!
 //! The enum dispatch keeps `lattice_body`'s return type concrete (and thus
 //! inlinable) while letting callers vary the primitive at runtime.
@@ -15,10 +16,10 @@ use crate::error::LatticeError;
 
 /// A validated lattice-boundary shape.
 ///
-/// Constructed via the `PrimitiveShape::cube` / `PrimitiveShape::cylinder`
+/// Constructed via the [`PrimitiveShape::cube`] / [`PrimitiveShape::cylinder`]
 /// helpers, each of which validates parameters and wraps construction errors
 /// in [`LatticeError`]. The internal representation is the corresponding
-/// `sdf` primitive — see [`BoundaryShape`].
+/// `sdf` primitive (see the private `BoundaryShape` enum).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PrimitiveShape {
     shape: BoundaryShape,

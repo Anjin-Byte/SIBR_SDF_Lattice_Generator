@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel older runs on the same ref when a new commit lands.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # --- Lint / format gates -------------------------------------------------
+
+  fmt:
+    name: Format (cargo fmt --check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt --all --check
+
+  clippy:
+    name: Clippy (-D warnings)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --all-targets --workspace -- -D warnings
+
+  # --- Per-crate test suites ----------------------------------------------
+  # Split per crate so the GitHub status-check list makes it obvious which
+  # area is broken when a run fails.
+
+  test-sdf:
+    name: Test — sdf
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p sdf --all-targets
+
+  test-lattice-gen:
+    name: Test — lattice-gen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p lattice-gen --all-targets
+
+  test-cli:
+    name: Test — sibr-solver (cli)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p sibr-solver --all-targets
+
+  test-xtask:
+    name: Test — xtask
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # `meshopt` compiles C++ via `cc`; ubuntu-latest has g++ preinstalled.
+      - run: cargo test -p xtask --all-targets
+
+  # --- Doctests across the workspace --------------------------------------
+  # Doctests run separately from unit tests above (`--all-targets` excludes
+  # them), so give them their own check.
+
+  doctests:
+    name: Doctests (workspace)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --workspace --doc
+
+  # --- Docs build ---------------------------------------------------------
+  # Strict mode — promotes any rustdoc warning (broken intra-doc link,
+  # missing doc on a public item, etc.) to a failing check.
+
+  docs:
+    name: Docs (cargo doc, -D warnings)
+    runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: "-D warnings"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --workspace --no-deps
+
+  # --- Deploy docs to GitHub Pages ----------------------------------------
+  # Runs only on pushes to main and only after the docs job is green.
+  # Generates the same docs the CI builds, adds a root redirect so the
+  # landing URL takes you straight to `lattice_gen`, and publishes via
+  # GitHub's first-party Pages actions.
+  #
+  # Before this works, the repo's Settings → Pages must have
+  # "Build and deployment → Source" set to "GitHub Actions".
+
+  deploy-docs:
+    name: Deploy docs to GitHub Pages
+    needs: [docs]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build docs
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --workspace --no-deps
+      - name: Add landing-page redirect
+        # cargo doc doesn't produce a top-level index.html in workspaces.
+        # Point visitors at the main user-facing crate.
+        run: |
+          echo '<meta http-equiv="refresh" content="0; url=lattice_gen/index.html">' \
+            > target/doc/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/doc
+      - id: deploy
+        uses: actions/deploy-pages@v4

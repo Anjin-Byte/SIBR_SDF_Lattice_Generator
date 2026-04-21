@@ -63,10 +63,7 @@ pub(crate) type KelvinCellBody = Union<
 /// only way this fails is a bypass of [`crate::LatticeJob::new`]'s
 /// invariants — defensive path.
 #[allow(clippy::too_many_lines)]
-pub(crate) fn kelvin_cell_body(
-    length: f32,
-    radius: f32,
-) -> Result<KelvinCellBody, LatticeError> {
+pub(crate) fn kelvin_cell_body(length: f32, radius: f32) -> Result<KelvinCellBody, LatticeError> {
     let h = length * 0.5;
     let q = length * 0.25;
 
@@ -325,7 +322,11 @@ mod tests {
     fn eval_at_hex_face_centroid_is_positive_pore() {
         let body = kelvin_cell_body(4.0, 0.1).unwrap();
         let p = vec3(1.5, 1.5, 1.5);
-        assert!(body.eval(p) > 0.0, "expected positive, got {}", body.eval(p));
+        assert!(
+            body.eval(p) > 0.0,
+            "expected positive, got {}",
+            body.eval(p)
+        );
     }
 
     // --------------------------------------------------------------
@@ -417,7 +418,10 @@ mod tests {
         let body = kelvin_cell_body(4.0, 0.1).unwrap();
         // (-h, q/2, q/2) is the midpoint of a -x face-edge.
         let d = body.eval(vec3(-2.0, 0.5, 0.5));
-        assert!((d - (-0.1)).abs() < 1e-5, "expected -0.1 at -x face-edge midpoint, got {d}");
+        assert!(
+            (d - (-0.1)).abs() < 1e-5,
+            "expected -0.1 at -x face-edge midpoint, got {d}"
+        );
     }
 
     /// Regression: "Interior edge endpoints used corner-frame `[0, L]`
@@ -427,7 +431,10 @@ mod tests {
         let body = kelvin_cell_body(4.0, 0.1).unwrap();
         // (-1.5, -1.5, 0) is the midpoint of an interior edge at z = 0.
         let d = body.eval(vec3(-1.5, -1.5, 0.0));
-        assert!((d - (-0.1)).abs() < 1e-5, "expected -0.1 at interior edge midpoint, got {d}");
+        assert!(
+            (d - (-0.1)).abs() < 1e-5,
+            "expected -0.1 at interior edge midpoint, got {d}"
+        );
     }
 
     /// Regression: "Face-edge table used `±L/2` in place of `±L/4` for

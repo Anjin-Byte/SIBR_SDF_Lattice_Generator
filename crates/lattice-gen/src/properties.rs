@@ -92,9 +92,9 @@ impl LatticeJob {
     pub fn window_diameter(&self) -> f32 {
         match self.cell() {
             UnitCell::Cubic { length } => length - 2.0 * self.strut().radius(),
-            UnitCell::Kelvin { .. } | UnitCell::BccXy { .. } => todo!(
-                "Phase 2 — closed-form window_diameter for Kelvin / BccXy topologies"
-            ),
+            UnitCell::Kelvin { .. } | UnitCell::BccXy { .. } => {
+                todo!("Phase 2 — closed-form window_diameter for Kelvin / BccXy topologies")
+            }
         }
     }
 
@@ -120,9 +120,9 @@ impl LatticeJob {
     pub fn specific_surface_area(&self) -> f32 {
         match self.cell() {
             UnitCell::Cubic { length } => 6.0 * PI * self.strut().radius() / (length * length),
-            UnitCell::Kelvin { .. } | UnitCell::BccXy { .. } => todo!(
-                "Phase 2 — closed-form specific_surface_area for Kelvin / BccXy topologies"
-            ),
+            UnitCell::Kelvin { .. } | UnitCell::BccXy { .. } => {
+                todo!("Phase 2 — closed-form specific_surface_area for Kelvin / BccXy topologies")
+            }
         }
     }
 

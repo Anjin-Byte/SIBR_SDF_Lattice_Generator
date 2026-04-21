@@ -13,15 +13,15 @@
 //! Every component on the right is an `ExactSdf` (per the sdf crate's
 //! precision markers), so the whole composition is an `ExactSdf`.
 //!
-//! # Topology dispatch — [`LatticeBody`]
+//! # Topology dispatch — `LatticeBody`
 //!
 //! Different topologies produce cell bodies of different concrete types
 //! (`CubicCellBody` ≠ `KelvinCellBody` ≠ `BccXyCellBody`), so a single
-//! `match` arm cannot unify them. The [`LatticeBody`] enum is the
-//! resolution: one variant per topology, each holding the fully concrete
-//! composed SDF, with `Sdf`/`BoundSdf`/`ExactSdf` implemented on the enum
-//! via a delegating `match`. This mirrors the existing
-//! [`crate::primitive::BoundaryShape`] pattern — zero-cost enum dispatch,
+//! `match` arm cannot unify them. The `LatticeBody` enum (crate-private)
+//! is the resolution: one variant per topology, each holding the fully
+//! concrete composed SDF, with `Sdf`/`BoundSdf`/`ExactSdf` implemented
+//! on the enum via a delegating `match`. This mirrors the existing
+//! `BoundaryShape` pattern in `primitive.rs` — zero-cost enum dispatch,
 //! no trait objects, no type erasure.
 
 use core::f32::consts::FRAC_1_SQRT_2;
@@ -58,7 +58,7 @@ impl LatticeJob {
     /// for the topology in question. The per-topology `r_max` is the radius
     /// beyond which non-adjacent struts inside one cell would overlap (or,
     /// for Cubic, adjacent cells would touch across every shared face). See
-    /// [`r_max_for`] for the derivations.
+    /// the `r_max_for` helper in this module for the derivations.
     pub fn new(
         primitive: PrimitiveShape,
         cell: UnitCell,
@@ -165,9 +165,9 @@ impl ExactSdf for LatticeBody {}
 
 /// Composes the lattice-body SDF for a validated job.
 ///
-/// The returned value is a [`LatticeBody`] — an enum with one concrete
-/// `ExactSdf` composition per topology. The public return type is
-/// `impl ExactSdf` to keep callers topology-agnostic; query via
+/// The returned value is a `LatticeBody` (crate-private enum) — one
+/// concrete `ExactSdf` composition per topology. The public return type
+/// is `impl ExactSdf` to keep callers topology-agnostic; query via
 /// [`sdf::Sdf::eval`].
 ///
 /// # Structure
@@ -199,8 +199,8 @@ pub fn lattice_body(job: &LatticeJob) -> impl ExactSdf {
 
     match job.cell {
         UnitCell::Cubic { length } => {
-            let cell_body = cubic_cell_body(length, radius)
-                .expect("invariants verified by LatticeJob::new");
+            let cell_body =
+                cubic_cell_body(length, radius).expect("invariants verified by LatticeJob::new");
             let tiled = LimitedRepeat::new(period, extents, cell_body)
                 .expect("invariants verified by LatticeJob::new and extents_from_aabb");
             LatticeBody::Cubic(Intersection {
@@ -209,8 +209,8 @@ pub fn lattice_body(job: &LatticeJob) -> impl ExactSdf {
             })
         }
         UnitCell::Kelvin { length } => {
-            let cell_body = kelvin_cell_body(length, radius)
-                .expect("invariants verified by LatticeJob::new");
+            let cell_body =
+                kelvin_cell_body(length, radius).expect("invariants verified by LatticeJob::new");
             let tiled = LimitedRepeat::new(period, extents, cell_body)
                 .expect("invariants verified by LatticeJob::new and extents_from_aabb");
             LatticeBody::Kelvin(Intersection {
@@ -219,8 +219,8 @@ pub fn lattice_body(job: &LatticeJob) -> impl ExactSdf {
             })
         }
         UnitCell::BccXy { length } => {
-            let cell_body = bccxy_cell_body(length, radius)
-                .expect("invariants verified by LatticeJob::new");
+            let cell_body =
+                bccxy_cell_body(length, radius).expect("invariants verified by LatticeJob::new");
             let tiled = LimitedRepeat::new(period, extents, cell_body)
                 .expect("invariants verified by LatticeJob::new and extents_from_aabb");
             LatticeBody::BccXy(Intersection {
