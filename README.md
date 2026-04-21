@@ -12,14 +12,6 @@ Requires Rust 1.85+ (2024 edition). From the workspace root:
 cargo build --release
 ```
 
-First build fetches a handful of crates and compiles `meshoptimizer` from source — takes a minute or two. After that, the binary is at `target/release/sibr-lattice`.
-
-Output examples below write into `out/`, which is gitignored; create it once:
-
-```sh
-mkdir -p out
-```
-
 ## Try it
 
 **Smallest thing that produces output** — cubic lattice in a 10 mm cube, meshes in <1 s:
