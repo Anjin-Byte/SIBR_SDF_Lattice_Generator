@@ -1,4 +1,4 @@
-# SIBR SDF Lattice Generator
+# SIBR(Small Business Innovation Research) SDF Lattice Generator
 
 Rust CLI/API for generating printable lattice meshes via signed-distance functions. Supports cubic, Kelvin, and BccXy unit cells on cube and cylinder primitives; produces STL/OBJ through a CPU-only marching-cubes pipeline with Taubin smoothing and optional QEM decimation.
 
