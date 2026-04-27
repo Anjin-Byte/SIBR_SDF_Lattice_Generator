@@ -178,6 +178,170 @@ pub(crate) fn interior_decider(cube: &[f32; 8], s: i8) -> bool {
     }
 }
 
+/// Per-edge interior asymptotic decider — used by Chernyaev cases 6,
+/// 7, 12, 13 (Lewiner 7, 8, 13, 14) to select between alternative
+/// triangulations of an interior-ambiguous voxel.
+///
+/// Distinct from [`interior_decider`] because these four cases evaluate
+/// the trilinear interpolant **along a single reference edge** (rather
+/// than the body-diagonal quadratic of cases 4 and 10). The reference
+/// edge is determined per-case:
+/// - Chernyaev 6 (Lewiner 7) → `test6[cfg][3]`
+/// - Chernyaev 7 (Lewiner 8) → `test7[cfg][5]`
+/// - Chernyaev 12 (Lewiner 13) → `test12[cfg][4]`
+/// - Chernyaev 13 (Lewiner 14) → `tiling13_5_1[cfg][subcfg][1] - 1`
+///
+/// The final 4-bit dispatch matches the case-5/11 path verbatim. `At`
+/// is held at zero (per the Julia source's case-7/8/13/14 branch),
+/// which forces bit 0 of the dispatch key on, restricting `test` to
+/// odd values.
+///
+/// Returns `true` when the caller should emit the "first" alternative
+/// (e.g., 13.5.1, 7.4.2 inverted polarity, etc.); `false` for the
+/// "second".
+///
+/// Ported from `MarchingCubes.jl` `src/MarchingCubes.jl` lines 395-489
+/// (the `case ∈ {7, 8, 13, 14}` branch of `test_interior`).
+///
+/// # Panics (debug only)
+///
+/// `debug_assert!`s that `edge < 12`.
+#[allow(clippy::float_equality_without_abs, clippy::too_many_lines)]
+pub(crate) fn interior_decider_per_edge(cube: &[f32; 8], edge: u8, s: i8) -> bool {
+    debug_assert!(edge < 12, "per-edge interior reference edge must be 0..=11");
+
+    // Per Julia: `At` is left at zero for the case-7/8/13/14 branch;
+    // only `Bt`, `Ct`, `Dt` are computed. The bit-pack later then
+    // forces bit 0 (At ≥ 0 is true) regardless.
+    let (bt, ct, dt) = match edge {
+        0 => {
+            let t = cube[0] / (cube[0] - cube[1]);
+            (
+                cube[3] + (cube[2] - cube[3]) * t,
+                cube[7] + (cube[6] - cube[7]) * t,
+                cube[4] + (cube[5] - cube[4]) * t,
+            )
+        }
+        1 => {
+            let t = cube[1] / (cube[1] - cube[2]);
+            (
+                cube[0] + (cube[3] - cube[0]) * t,
+                cube[4] + (cube[7] - cube[4]) * t,
+                cube[5] + (cube[6] - cube[5]) * t,
+            )
+        }
+        2 => {
+            let t = cube[2] / (cube[2] - cube[3]);
+            (
+                cube[1] + (cube[0] - cube[1]) * t,
+                cube[5] + (cube[4] - cube[5]) * t,
+                cube[6] + (cube[7] - cube[6]) * t,
+            )
+        }
+        3 => {
+            let t = cube[3] / (cube[3] - cube[0]);
+            (
+                cube[2] + (cube[1] - cube[2]) * t,
+                cube[6] + (cube[5] - cube[6]) * t,
+                cube[7] + (cube[4] - cube[7]) * t,
+            )
+        }
+        4 => {
+            let t = cube[4] / (cube[4] - cube[5]);
+            (
+                cube[7] + (cube[6] - cube[7]) * t,
+                cube[3] + (cube[2] - cube[3]) * t,
+                cube[0] + (cube[1] - cube[0]) * t,
+            )
+        }
+        5 => {
+            let t = cube[5] / (cube[5] - cube[6]);
+            (
+                cube[4] + (cube[7] - cube[4]) * t,
+                cube[0] + (cube[3] - cube[0]) * t,
+                cube[1] + (cube[2] - cube[1]) * t,
+            )
+        }
+        6 => {
+            let t = cube[6] / (cube[6] - cube[7]);
+            (
+                cube[5] + (cube[4] - cube[5]) * t,
+                cube[1] + (cube[0] - cube[1]) * t,
+                cube[2] + (cube[3] - cube[2]) * t,
+            )
+        }
+        7 => {
+            let t = cube[7] / (cube[7] - cube[4]);
+            (
+                cube[6] + (cube[5] - cube[6]) * t,
+                cube[2] + (cube[1] - cube[2]) * t,
+                cube[3] + (cube[0] - cube[3]) * t,
+            )
+        }
+        8 => {
+            let t = cube[0] / (cube[0] - cube[4]);
+            (
+                cube[3] + (cube[7] - cube[3]) * t,
+                cube[2] + (cube[6] - cube[2]) * t,
+                cube[1] + (cube[5] - cube[1]) * t,
+            )
+        }
+        9 => {
+            let t = cube[1] / (cube[1] - cube[5]);
+            (
+                cube[0] + (cube[4] - cube[0]) * t,
+                cube[3] + (cube[7] - cube[3]) * t,
+                cube[2] + (cube[6] - cube[2]) * t,
+            )
+        }
+        10 => {
+            let t = cube[2] / (cube[2] - cube[6]);
+            (
+                cube[1] + (cube[5] - cube[1]) * t,
+                cube[0] + (cube[4] - cube[0]) * t,
+                cube[3] + (cube[7] - cube[3]) * t,
+            )
+        }
+        // edge == 11
+        _ => {
+            let t = cube[3] / (cube[3] - cube[7]);
+            (
+                cube[2] + (cube[6] - cube[2]) * t,
+                cube[1] + (cube[5] - cube[1]) * t,
+                cube[0] + (cube[4] - cube[0]) * t,
+            )
+        }
+    };
+
+    // Pack At ≥ 0 (always true here, At = 0), Bt, Ct, Dt into a 4-bit
+    // key. Bit 0 = 1 always for case 14, so `test` is always odd.
+    let test =
+        1_u8 | u8::from(bt >= 0.0) << 1 | u8::from(ct >= 0.0) << 2 | u8::from(dt >= 0.0) << 3;
+
+    // Final dispatch — identical structure to [`interior_decider`]'s
+    // tail. `At * Ct - Bt * Dt` reduces to `-Bt * Dt` since At = 0.
+    let sub = -bt * dt;
+    match test {
+        0..=4 | 6 | 8 | 9 | 12 => s > 0,
+        5 => {
+            if sub < f32::EPSILON {
+                s > 0
+            } else {
+                s < 0
+            }
+        }
+        10 => {
+            if sub >= f32::EPSILON {
+                s > 0
+            } else {
+                s < 0
+            }
+        }
+        // test ∈ {7, 11, 13, 14, 15}
+        _ => s < 0,
+    }
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

@@ -36,7 +36,7 @@ cargo run --release -p sibr-lattice -- \
   -o out/kelvin-cyl.stl
 ```
 
-Defaults to classic Marching Cubes. Pass `--extraction-method mc33` for the partial Chernyaev port (fully disambiguates the face- and body-ambiguous cases; see the flag table below).
+Defaults to MC33 (Chernyaev 1995 / Lewiner 2003) — topologically correct at every non-degenerate configuration. Pass `--extraction-method classic` for the legacy Lorensen-Cline 1987 algorithm if you need the old behavior.
 
 Raw output is typically hundreds of MB — too big for most slicers. Decimate it:
 
@@ -56,7 +56,7 @@ For a batch pipeline covering four representative cylinder configs, see [`script
 |---|---|
 | `--cell-topology` | `cubic` \| `kelvin` \| `bccxy` |
 | `--grid-ratio N` | Mesh cells per strut radius. 3 is the recommended baseline; higher → finer mesh, bigger file. |
-| `--extraction-method` | `classic` (Lorensen & Cline 1987, default) or `mc33` (Chernyaev 1995 / Lewiner 2003, **partial port** — cases 3 and 4 are fully disambiguated and unambiguous cases use the face-consistent Lewiner tables; Lewiner cases 7, 8, 11, 13, 14 still fall back to classic with a one-time warning). Output of `mc33` is never worse than `classic` on the same input. |
+| `--extraction-method` | `mc33` (Chernyaev 1995 / Lewiner 2003, **default**) or `classic` (Lorensen & Cline 1987). MC33 is topologically correct at every non-degenerate configuration — all seven Chernyaev ambiguous cases (3, 4, 6, 7, 10, 12, 13) are fully ported, and unambiguous cases use Lewiner's face-consistent tables. Output of `mc33` is never worse than `classic` on the same input; use `classic` only for differential testing or to reproduce pre-MC33 behavior. |
 | `--smooth-iterations N` | Taubin smoothing passes. 10–20 typical; removes voxel artifacts. |
 | `--help` | Everything else. |
 

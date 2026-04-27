@@ -90,13 +90,12 @@ pub struct Args {
     #[arg(long, value_enum)]
     pub format: Option<OutputFormat>,
 
-    /// Isosurface-extraction method. Default: classic (Lorensen-Cline 1987).
-    ///
-    /// MC33 (Chernyaev 1995) is being ported incrementally. Cases 3 and 4
-    /// (face-ambiguous and body-ambiguous diagonals) are fully
-    /// disambiguated; remaining ambiguous cases fall back to classic with
-    /// a one-time warning. See `ExtractionMethod::Mc33` docs.
-    #[arg(long, value_enum, default_value_t = ExtractionMethodArg::Classic)]
+    /// Isosurface-extraction method. Default: MC33 (Chernyaev 1995) —
+    /// topologically correct at every non-degenerate configuration.
+    /// Pass `--extraction-method classic` for the legacy Lorensen-Cline
+    /// 1987 algorithm (faster but produces holes / non-manifold edges
+    /// at ambiguous configurations). See `ExtractionMethod::Mc33` docs.
+    #[arg(long, value_enum, default_value_t = ExtractionMethodArg::Mc33)]
     pub extraction_method: ExtractionMethodArg,
 
     /// Number of Taubin smoothing iterations to apply after welding.

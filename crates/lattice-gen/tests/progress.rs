@@ -47,7 +47,10 @@ impl Progress for Spy {
 }
 
 fn assert_well_formed(spy: &Spy, stage: &str) {
-    assert_eq!(spy.set_len_calls, 1, "{stage}: set_len not called exactly once");
+    assert_eq!(
+        spy.set_len_calls, 1,
+        "{stage}: set_len not called exactly once"
+    );
     assert_eq!(
         spy.finish_calls, 1,
         "{stage}: finish not called exactly once"

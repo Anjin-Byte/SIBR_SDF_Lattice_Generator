@@ -18,8 +18,10 @@ use tables::CORNER_OFFSETS;
 
 /// Which isosurface-extraction method to use.
 ///
-/// See each variant's doc for trade-offs. `Default` is [`Self::ClassicMc`]
-/// so callers that don't specify a method preserve the pre-MC33 behavior.
+/// See each variant's doc for trade-offs. `Default` is [`Self::Mc33`] —
+/// topologically correct at every non-degenerate configuration. Use
+/// [`Self::ClassicMc`] only if reproducing pre-MC33-port behavior or
+/// for differential testing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ExtractionMethod {
     /// Classic Marching Cubes (Lorensen & Cline, 1987).
@@ -29,27 +31,22 @@ pub enum ExtractionMethod {
     /// disambiguate consistently; our integration tests measure this at
     /// roughly 5% of edges for smooth SDFs. See Domain Knowledge note
     /// "Isosurface Extraction Methods" for details.
-    #[default]
     ClassicMc,
 
     /// Marching Cubes 33 (Chernyaev, 1995).
     ///
     /// Topologically correct at all non-degenerate configurations.
-    /// Runs the classic case index lookup; for the known-ambiguous cases
-    /// it applies face and interior asymptotic deciders to select the
-    /// correct triangulation.
+    /// Runs the Lewiner 2003 case index lookup; for ambiguous cases it
+    /// applies face and interior asymptotic deciders to select the
+    /// correct triangulation. **All Chernyaev cases (3, 4, 6, 7, 10,
+    /// 12, 13) are fully ported** — see the `mc33` module docs for
+    /// the per-case dispatch map. The unambiguous cases use Lewiner's
+    /// face-consistent tables, eliminating the ~2–3% non-manifold
+    /// edge rate on shared faces that classic MC produces.
     ///
-    /// **Current implementation status**: ported incrementally.
-    /// - **Case 3** (face-ambiguous, two diagonal corners on a face):
-    ///   fully disambiguated via the face asymptotic decider.
-    /// - **Case 4** (body-ambiguous, two diagonal corners on a body
-    ///   diagonal): fully disambiguated via the interior decider.
-    /// - **Cases 6, 7, 10, 12, 13**: still fall back to classic's
-    ///   triangulation with a single `tracing::warn!` per run.
-    /// - **Unambiguous cases**: delegated to classic unconditionally.
-    ///
-    /// MC33 output is therefore at least as good as classic MC, and
-    /// strictly better wherever a Case-3 or Case-4 voxel occurs.
+    /// MC33 output is at least as good as classic MC on every
+    /// configuration and strictly better at ambiguous configurations.
+    #[default]
     Mc33,
 }
 
@@ -282,8 +279,8 @@ mod tests {
     }
 
     #[test]
-    fn default_method_is_classic() {
-        assert_eq!(ExtractionMethod::default(), ExtractionMethod::ClassicMc);
+    fn default_method_is_mc33() {
+        assert_eq!(ExtractionMethod::default(), ExtractionMethod::Mc33);
     }
 
     /// Histograms the Lewiner base case across every voxel of a workload.
